@@ -6,7 +6,7 @@ class ResultPage extends StatelessWidget {
   final String userId; // Assuming userId is passed to this page
   final FirebaseService _firebaseService = FirebaseService();
 
-  const ResultPage({Key? key, required this.userId}) : super(key: key); // Update constructor to accept userId
+  ResultPage({Key? key, required this.userId}) : super(key: key); // Update constructor to accept userId
 
   @override
   Widget build(BuildContext context) {
