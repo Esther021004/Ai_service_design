@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from firebase_utils import fetch_user_input, save_recommendations
-from recommend import crawl_schedule, recommend_major_lectures
+from firebase_utils import fetch_user_input, save_recommendations, fetch_previous_courses
+from recommend import recommend_major_lectures
 
 app = FastAPI()
 
@@ -11,20 +11,31 @@ def read_root():
     
 class UserRequest(BaseModel):
     user_id: str
-    semester_urls: dict  # { "24-1": "https://everytime.kr/...", "24-2": "https://..." }
 
 @app.post("/recommend/")
 def recommend(user: UserRequest):
-    user_input = fetch_user_input(user.user_id)
-    if not user_input:
+    # 1. 사용자 기본 정보 로드
+    user_doc = fetch_user_input(user.user_id)
+    if not user_doc:
         return {"error": "사용자 정보 없음"}
 
-    # 수강 내역 수집
-    previous_courses = []
-    for url in user.semester_urls.values():
-        previous_courses.extend(crawl_schedule(url))
+    # 2. profile과 preferences.major 분리
+    profile = user_doc.get("profile", {})
+    preferences = user_doc.get("preferences", {}).get("major", {})
 
-    # 추천 실행
+    # 3. DB에서 이전 수강 강의 불러오기
+    previous_courses = fetch_previous_courses(user.user_id)
+
+     # 4. 추천 실행
+    user_input = {
+        "profile": profile,
+        "preferences": {
+            "major": preferences
+        }
+    }
     results = recommend_major_lectures(user_input, previous_courses)
+
+    # 5. 결과 저장
     save_recommendations(user.user_id, results)
+    
     return {"user_id": user.user_id, "recommendations": results}
