@@ -12,3 +12,11 @@ if not firebase_admin._apps:
 
 def get_firestore_client():
     return firestore.client()
+    
+# 찜한 강의 목록 불러오기
+def fetch_favorite_lectures(user_id: str):
+    db = get_firestore_client()
+    ref = db.collection("users").document(user_id).collection("favorites")
+    docs = ref.stream()
+    favorites = [doc.to_dict() for doc in docs]
+    return favorites
