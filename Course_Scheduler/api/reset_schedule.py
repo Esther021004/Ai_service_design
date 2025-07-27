@@ -9,11 +9,13 @@ db = get_firestore_client()
 def reset_schedule(request: UserOnlyRequest):
     user_id = request.user_id
 
-    doc_ref = db.collection("user_schedules").document(user_id)
-    doc = doc_ref.get()
+    timetable_ref = db.collection("users").document(user_id).collection("timetable")
+    docs = list(timetable_ref.stream())
+    
+    if not docs:
+        raise HTTPException(status_code=404, detail="시간표에 저장된 강의가 없습니다.")
 
-    if not doc.exists:
-        raise HTTPException(status_code=404, detail="사용자 시간표가 존재하지 않습니다.")
+    for doc in docs:
+        doc.reference.delete()
 
-    doc_ref.set({"current_schedule": []})
     return {"message": "🧹 시간표가 초기화되었습니다."}
