@@ -12,23 +12,20 @@ def update_schedule(request: UpdateRequest):
     professor = request.교수명
     new_subject = request.새로운_과목명
 
-    doc_ref = db.collection("user_schedules").document(user_id)
-    doc = doc_ref.get()
+    timetable_ref = db.collection("users").document(user_id).collection("timetable")
+    docs = timetable_ref.stream()
 
-    if not doc.exists:
-        raise HTTPException(status_code=404, detail="사용자 시간표가 존재하지 않습니다.")
-
-    current = doc.to_dict().get("current_schedule", [])
-    found = False
-
-    for lec in current:
-        if subject in lec['과목명'] and lec['교수명'] == professor:
-            lec['과목명'] = new_subject
-            found = True
+    target_doc_id = None
+    for doc in docs:
+        data = doc.to_dict()
+        if subject in data.get("과목명", "") and data.get("교수명") == professor:
+            target_doc_id = doc.id
             break
 
-    if not found:
+    if not target_doc_id:
         raise HTTPException(status_code=404, detail="해당 강의를 찾을 수 없습니다.")
 
-    doc_ref.set({"current_schedule": current})
+    # 업데이트 실행
+    timetable_ref.document(target_doc_id).update({"과목명": new_subject})
+    
     return {"message": "✏️ 과목명이 수정되었습니다."}
