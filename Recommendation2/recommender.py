@@ -1,46 +1,9 @@
 import pandas as pd
 import numpy as np
 import ast
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import normalize
 
-# ===== 크롤링 =====
-def get_webdriver():
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument(
-        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-
-def crawl_schedule(url):
-    try:
-        driver = get_webdriver()
-        driver.get(url)
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "tablebody")))
-        tablebody = driver.find_element(By.CLASS_NAME, "tablebody")
-        subjects = tablebody.find_elements(By.CLASS_NAME, "subject")
-
-        course_set = set()
-        for subject in subjects:
-            try:
-                lecture = subject.find_element(By.TAG_NAME, "h3").text.strip()
-                professor = subject.find_element(By.TAG_NAME, "em").text.strip()
-                course_set.add({"과목명": lecture, "교수명": professor})
-            except:
-                continue
-        return [{"과목명": lec, "교수명": prof} for lec, prof in sorted(course_set)]
-    except Exception:
-        return []
 
 # ========== 캠퍼스 인코딩 함수 ==========
 def encode_campus(campus):
@@ -50,6 +13,8 @@ def encode_campus(campus):
   
 # ===== 사용자 벡터화 =====
 def vectorize_user_input(user):
+    pref = user['preferences']['liberal']
+    
     class_types = ['블렌디드', '원격', '일반']
     attendance_types = ['전자출결', '직접호명', '모름', '복합적', '반영안함']
     grade_types = ['너그러움', '보통', '모름', '깐깐함']
@@ -77,16 +42,16 @@ def vectorize_user_input(user):
         elif score <= 4: return 0.4
         else: return 0.5
 
-    campus_vec = [1 if user['캠퍼스'] == t else 0 for t in campus_types] if user['캠퍼스'] in campus_types else [0, 0]
-    class_type_vec = [3 * (1 if user['수업유형'] == t else 0) for t in class_types]
-    attendance_vec = [1 if user['출결'] == t else 0 for t in attendance_types]
-    성적_vec = [1 if user['성적'] == g else 0 for g in grade_types]
-    시험 = convert_exam_count_scaled(user['시험']) / 3
-    과제 = scale_task_or_team(user['과제'])
-    조모임 = scale_task_or_team(user['조모임'])
-    강의시간 = 1.0 if user['강의 시간'] == '풀강' else 0.0
-    강의력 = {'좋음': 1.0, '보통': 0.5, '나쁨': 0.0}.get(user['강의력'], 0.5)
-    평점 = (rating_bucket(user['평점']) / 2) * 2
+    campus_vec = [1 if pref['캠퍼스'] == t else 0 for t in campus_types] if pref['캠퍼스'] in campus_types else [0, 0]
+    class_type_vec = [3 * (1 if pref['수업유형'] == t else 0) for t in class_types]
+    attendance_vec = [1 if pref['출결'] == t else 0 for t in attendance_types]
+    성적_vec = [1 if pref['성적'] == g else 0 for g in grade_types]
+    시험 = convert_exam_count_scaled(pref['시험']) / 3
+    과제 = scale_task_or_team(pref['과제'])
+    조모임 = scale_task_or_team(pref['조모임'])
+    강의시간 = 1.0 if pref['강의 시간'] == '풀강' else 0.0
+    강의력 = {'좋음': 1.0, '보통': 0.5, '나쁨': 0.0}.get(pref['강의력'], 0.5)
+    평점 = (rating_bucket(pref['평점']) / 2) * 2
 
     return np.array([시험, 과제, 조모임] + attendance_vec + 성적_vec + [강의시간, 강의력] + class_type_vec + campus_vec + [평점])
 
@@ -215,9 +180,9 @@ def recommend_liberal(user_vec, prev_lectures, 필수과목명, user_grade):
 # ===== 통합 교양 추천 =====
 def recommend_combined(user_input, user_vec, prev_lectures):
     필수추천 = load_required_courses(
-        user_major=user_input['전공'],
-        user_college=user_input['단과대학'],
-        user_grade=user_input['학년']
+        user_major=user_input['profile']['전공'],
+        user_college=user_input['profile']['단과대학'],
+        user_grade=user_input['profile']['학년']
     )
   
     필수추천_dict = 필수추천.to_dict('records')
@@ -256,7 +221,7 @@ def recommend_career(user_input, user_vec, prev_lectures):
     must_recommend = []
 
     # ✅ 조건 충족 시 '전공별진로탐색' 무조건 추천
-    if user_input['학년'] == 1 and user_input['전공'] not in ['청정신소재공학과', '바이오식품공학과', '뷰티산업학과'] and user_input['단과대학'] != '사범대학':
+    if user_input['profile']['학년'] == 1 and user_input['profile']['전공'] not in ['청정신소재공학과', '바이오식품공학과', '뷰티산업학과'] and user_input['단과대학'] != '사범대학':
         탐색_row = df[df['과목명'].str.contains("전공별 진로 탐색", case=False)]
         for _, row in 탐색_row.iterrows():
             title = row['과목명'].strip().lower()
@@ -268,7 +233,7 @@ def recommend_career(user_input, user_vec, prev_lectures):
                     '교수명': row['교수명'],
                     '이수구분': row['이수구분'],
                     '영역': row['영역'],
-                    '추천이유': reasons
+                    '추천 이유': reasons
                 })
                 제외과목명.add(title)
                 break
@@ -287,7 +252,7 @@ def recommend_career(user_input, user_vec, prev_lectures):
             '교수명': row['교수명'],
             '이수구분': row['이수구분'],
             '영역': row['영역'],
-            '추천이유': reasons
+            '추천 이유': reasons
         })
         if len(results) >= (2 - len(must_recommend)):
             break
