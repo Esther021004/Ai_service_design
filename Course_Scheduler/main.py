@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api import add_schedule, delete_schedule, update_schedule, reset_schedule
+from api import add_schedule, delete_schedule, update_schedule, reset_schedule, get_schedule
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -18,6 +18,7 @@ app.include_router(add_schedule.router)
 app.include_router(delete_schedule.router)
 app.include_router(update_schedule.router)
 app.include_router(reset_schedule.router)
+app.include_router(get_schedule.router)
 
 @app.get("/")
 def root():
