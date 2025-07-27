@@ -30,8 +30,11 @@ def is_overlapping(new_time: dict, existing_schedule: list) -> bool:
     for day in new_time:
         new_slots = set(new_time[day])
         for lec in existing_schedule:
-            if day in lec['시간표']:
-                if new_slots & set(lec['시간표'][day]):
+            lec_time = lec.get('시간표')
+            if not lec_time:
+                continue
+            if day in lec_time:
+                if new_slots & set(lec_time[day]):
                     return True
     return False
 
