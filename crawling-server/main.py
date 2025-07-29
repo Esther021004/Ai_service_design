@@ -15,8 +15,12 @@ class URLRequest(BaseModel):
 def crawl_courses(request: URLRequest):
     try:
         print("📥 요청 URL:", request.url)
-        result = crawl_schedule(request.url)
-        print("✅ 크롤링 결과:", result)
+        raw_result = crawl_schedule(request.url)
+        print("✅ 크롤링 결과:", raw_result)
+
+        # 🔁 튜플 → dict 변환
+        result = [{"과목명": name, "교수명": prof} for name, prof in raw_result]
+
         return {"courses": result}
     except Exception as e:
         print("❌ 크롤링 오류:", e)
