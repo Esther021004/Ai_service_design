@@ -18,52 +18,74 @@ def fetch_schedule_links(user_id):
         return user_doc.to_dict().get("schedule_links", {})
     return {}
 
-# 특정 사용자에 대해 강의 정보를 서브컬렉션(previous_courses)에 저장하기
-def save_courses_to_subcollection(user_id, courses):
+# 학기별 강의 정보를 previous_courses 맵 필드로 저장
+def save_courses_by_semester(user_id, semester, courses):
     user_ref = db.collection("users").document(user_id)
-    subcol_ref = user_ref.collection("previous_courses")
-
-    # 중복 저장 방지를 위해 기존 course (과목명+교수명 기준) 먼저 조회
-    existing_courses = [(doc.to_dict().get("과목명"), doc.to_dict().get("교수명")) for doc in subcol_ref.stream()]
+    user_doc = user_ref.get()
     
-    for course in courses:
-        # 리스트 또는 튜플 형식인 경우 처리
-        if isinstance(course, (list, tuple)) and len(course) >= 2:
-            course_name, professor = course[0], course[1]
-        # 딕셔너리 형식인 경우 처리
-        elif isinstance(course, dict):
-            course_name = course.get("과목명")
-            professor = course.get("교수명")
-        else:
-            print("❌ 예상치 못한 형식:", course)
-            continue
+    previous_data = user_doc.to_dict().get("previous_courses", {}) if user_doc.exists else {}
 
-        if (course_name, professor) not in existing_courses:
-            subcol_ref.add({
-                "과목명": course_name,
-                "교수명": professor
-            })
+    # 새 학기 데이터 병합 (중복 제거)
+    updated_semester_courses = previous_data.get(semester, {})
+    for idx, course in enumerate(courses):
+        course_key = f"course{idx+1}"
+        updated_semester_courses[course_key] = {
+            "과목명": course.get("과목명"),
+            "교수명": course.get("교수명")
+        }
 
+    previous_data[semester] = updated_semester_courses
 
-# 🔹 특정 강의(과목명 + 교수명 일치)에 대해 이수구분 및 학점 업데이트
-def update_course_with_metadata(user_id, course_name, professor_name, category, credit):
-    subcol_ref = db.collection("users").document(user_id).collection("previous_courses")
-    docs = subcol_ref.stream()
+    user_ref.set({
+        "previous_courses": previous_data
+    }, merge=True)
     
-    for doc in docs:
-        data = doc.to_dict()
-        if data.get("과목명") == course_name and data.get("교수명") == professor_name:
-            subcol_ref.document(doc.id).update({
-                "이수구분": category,
-                "학점": credit
-            })
-            return True  # 업데이트 성공
-    return False  # 해당 강의 없음
+    # 또는 문서가 없을 수도 있을 때:
+    if not user_ref.get().exists:
+        user_ref.set({"previous_courses": previous_data}, merge=True)
+    else:
+        user_ref.update({"previous_courses": previous_data})
 
-# 전체 강의 불러오기 (이수구분, 학점 계산용)
+
+def update_course_metadata_by_semester(user_id, semester, course_name, professor, category, credit):
+    user_ref = db.collection("users").document(user_id)
+    user_doc = user_ref.get()
+    
+    if not user_doc.exists:
+        return False
+
+    previous_data = user_doc.to_dict().get("previous_courses", {})
+    semester_courses = previous_data.get(semester, {})
+
+    found = False
+    for key, course in semester_courses.items():
+        if course.get("과목명") == course_name and course.get("교수명") == professor:
+            course["이수구분"] = category
+            course["학점"] = credit
+            found = True
+            break
+
+    if found:
+        previous_data[semester] = semester_courses
+        user_ref.update({
+            "previous_courses": previous_data
+        })
+        return True
+    return False
+
+
+# 전체 강의 불러오기 (모든 학기의 course들 평탄화)
 def get_all_courses(user_id):
-    subcol_ref = db.collection("users").document(user_id).collection("previous_courses")
-    return [doc.to_dict() for doc in subcol_ref.stream()]
+    user_ref = db.collection("users").document(user_id).get()
+    if not user_ref.exists:
+        return []
+    
+    all_data = user_ref.to_dict().get("previous_courses", {})
+    all_courses = []
+    for semester, courses in all_data.items():
+        for key in courses:
+            all_courses.append(courses[key])
+    return all_courses
 
 
 def save_credit_summary(user_id, summary):
