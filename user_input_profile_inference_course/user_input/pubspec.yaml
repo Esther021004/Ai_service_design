@@ -1,0 +1,41 @@
+name: user_input
+
+description: A minimal Flutter project to test ProfileInputPage.
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.17.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^2.25.4
+  cloud_firestore: ^4.15.4
+  firebase_auth: ^4.17.4
+  google_sign_in: ^6.2.1
+  http: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/mascot.png
+    - assets/mascot_remove.png
+    - assets/학교전경 그래픽1.png
+    - assets/loading_character.png
+    - assets/loading_character_remove.png
+    - assets/fonts/Pretendard-Medium.ttf
+    - assets/fonts/강원교육튼튼.ttf
+  fonts:
+    - family: GangwonEdu
+      fonts:
+        - asset: assets/fonts/강원교육튼튼.ttf
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Medium.ttf 
