@@ -1,15 +1,30 @@
 from fastapi import FastAPI
 from fastapi import HTTPException
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from recommender import recommend_combined, recommend_career, vectorize_user_input
 from firebase_utils import fetch_user_info, save_recommendation_to_firebase, fetch_previous_courses
+import math
 
 app = FastAPI()
+
+print("[BOOT] FastAPI 시작됨")
 
 class UserID(BaseModel):
     user_id: str
     doc_id: str
 
+def replace_nan_with_none(obj):
+    """NaN → None 재귀 치환 함수"""
+    if isinstance(obj, float) and math.isnan(obj):
+        return None
+    elif isinstance(obj, dict):
+        return {k: replace_nan_with_none(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [replace_nan_with_none(v) for v in obj]
+    else:
+        return obj
+        
 @app.get("/")
 def read_root():
     return {"message": "liberal-career recommender API is live 🚀"}
@@ -49,7 +64,11 @@ def recommend_courses(user: UserID):
     # 결과 저장
     save_recommendation_to_firebase(user_id, doc_id, liberal_results, career_results)
 
-    return {
-        "liberal_recommendations": liberal_results,
-        "career_recommendations": career_results
-    }
+    # NaN 제거 후 반환
+    safe_liberal = replace_nan_with_none(liberal_results)
+    safe_career = replace_nan_with_none(career_results)
+    
+    return jsonable_encoder({
+        "liberal_recommendations": safe_liberal,
+        "career_recommendations": safe_career
+    })
