@@ -42,7 +42,7 @@ def vectorize_user_input(user):
     과제 = scale_task_or_team(pref['과제'])
     조모임 = scale_task_or_team(pref['조모임'])
     성적 = [1 if pref['성적'] == g else 0 for g in grade_types]
-    강의시간 = 1.0 if pref['강의 시간'] == '풀강' else 0.0
+    강의시간 = 1.0 if pref['강의시간'] == '풀강' else 0.0
     강의력 = {'좋음': 1.0, '보통': 0.5, '나쁨': 0.0}.get(pref['강의력'], 0.5)
     평점_weighted = rating_bucket(pref['평점']) / 2
 
@@ -99,7 +99,7 @@ def get_top_3_features(user_vec, lecture_vec):
 
 
 # ==================== 추천 함수 ====================
-def recommend_major_lectures(user_input: dict, previous_courses: list) -> list:
+def recommend_major_lectures(user_input: dict, previous_courses) -> list:
      # === 1. 사용자 기본 정보 로드 (profile 맵)
     profile = user_input['profile']
     dept = profile['단과대학']
@@ -108,12 +108,23 @@ def recommend_major_lectures(user_input: dict, previous_courses: list) -> list:
     학년_영역 = str(profile['학년']) + "영역"
 
     # === 2. 파일 로드
-    filename = f"강의_벡터화_{dept}_{major}_{sub}.csv" if sub else f"강의_벡터화_{dept}_{major}.csv"
+    filename = f"data/강의_벡터화_{dept}_{major}_{sub}.csv" if sub else f"data/강의_벡터화_{dept}_{major}.csv"
     df = pd.read_csv(filename, encoding='utf-8-sig')
     df = df[df['영역'].str.contains(학년_영역)].copy()
 
     # === 3. 과거 수강 과목 제거
-    prev_subjects = set([p['과목명'] for p in previous_courses])
+    print("[DEBUG] previous_courses:", previous_courses)
+
+    # 튜플 -> dict 변환 안전 처리
+    if isinstance(previous_courses, list) and previous_courses and isinstance(previous_courses[0], tuple):
+        try:
+            previous_courses = [dict(p) for p in previous_courses]
+        except Exception as e:
+            print("[ERROR] previous_courses 변환 실패:", e)
+            previous_courses = []
+
+    # 이후 dict 구조로 접근
+    prev_subjects = set(p['과목명'] for p in previous_courses if isinstance(p, dict) and '과목명' in p)
     df = df[~df['과목명'].isin(prev_subjects)]
 
     # === 4. 벡터화 및 유사도 계산
