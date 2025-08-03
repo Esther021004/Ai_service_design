@@ -49,7 +49,7 @@ def vectorize_user_input(user):
     시험 = convert_exam_count_scaled(pref['시험']) / 3
     과제 = scale_task_or_team(pref['과제'])
     조모임 = scale_task_or_team(pref['조모임'])
-    강의시간 = 1.0 if pref['강의 시간'] == '풀강' else 0.0
+    강의시간 = 1.0 if pref['강의시간'] == '풀강' else 0.0
     강의력 = {'좋음': 1.0, '보통': 0.5, '나쁨': 0.0}.get(pref['강의력'], 0.5)
     평점 = (rating_bucket(pref['평점']) / 2) * 2
 
@@ -112,13 +112,13 @@ def load_required_courses(user_major, user_college=None, user_grade=None):
 
     file = None
     if user_major in group1:
-        file = '필수추천_1.csv'
+        file = 'data/필수추천_1.csv'
     elif user_major in group2:
-        file = '필수추천_2.csv'
+        file = 'data/필수추천_2.csv'
     elif user_major in group3:
-        file = '필수추천_3.csv'
+        file = 'data/필수추천_3.csv'
     else:
-        file = f'필수추천_{user_major}.csv'
+        file = f'data/필수추천_{user_major}.csv'
 
     try:
         df = pd.read_csv(file, encoding='utf-8-sig')
@@ -142,7 +142,7 @@ def load_required_courses(user_major, user_college=None, user_grade=None):
 
 # ===== 교양 추천 =====
 def recommend_liberal(user_vec, prev_lectures, 필수과목명, user_grade):
-    df = pd.read_csv("강의_벡터화_일반교양.csv", encoding='utf-8-sig')
+    df = pd.read_csv("data/강의_벡터화_일반교양.csv", encoding='utf-8-sig')
     df['parsed_vector'] = df['전체 벡터'].apply(ast.literal_eval)
 
     # 🔹 1학년이 아니면 공통교양 제외
@@ -191,7 +191,7 @@ def recommend_combined(user_input, user_vec, prev_lectures):
     필수과목명 = set(c.strip().lower() for c in 필수추천['과목명'].tolist())
 
     # 유사도 기반 추천
-    유사도추천 = recommend_liberal(user_vec, prev_lectures, 필수과목명, user_input['학년'])
+    유사도추천 = recommend_liberal(user_vec, prev_lectures, 필수과목명, user_input['profile']['학년'])
   
     # 유사도 추천 중 필수추천과 과목명 겹치는 항목 제거
     유사도추천_filtered = [
@@ -206,7 +206,7 @@ def recommend_combined(user_input, user_vec, prev_lectures):
 
 # ===== 진로소양 추천 =====
 def recommend_career(user_input, user_vec, prev_lectures):
-    df = pd.read_csv("강의_벡터화_진로소양.csv", encoding='utf-8-sig')
+    df = pd.read_csv("data/강의_벡터화_진로소양.csv", encoding='utf-8-sig')
     df['parsed_vector'] = df['전체 벡터'].apply(ast.literal_eval)
   
     lecture_matrix = np.array(df['parsed_vector'].tolist())[:, :20]
@@ -221,7 +221,7 @@ def recommend_career(user_input, user_vec, prev_lectures):
     must_recommend = []
 
     # ✅ 조건 충족 시 '전공별진로탐색' 무조건 추천
-    if user_input['profile']['학년'] == 1 and user_input['profile']['전공'] not in ['청정신소재공학과', '바이오식품공학과', '뷰티산업학과'] and user_input['단과대학'] != '사범대학':
+    if user_input['profile']['학년'] == 1 and user_input['profile']['전공'] not in ['청정신소재공학과', '바이오식품공학과', '뷰티산업학과'] and user_input['profile']['단과대학'] != '사범대학':
         탐색_row = df[df['과목명'].str.contains("전공별 진로 탐색", case=False)]
         for _, row in 탐색_row.iterrows():
             title = row['과목명'].strip().lower()
