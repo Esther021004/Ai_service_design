@@ -57,10 +57,31 @@ class _ScheduleLoadingPageState extends State<ScheduleLoadingPage> {
       print('🔥 API 호출 시작: ${widget.urls[i]} (${i + 1}/${widget.urls.length})');
       
       try {
-        // 실제 API 호출 - 완료될 때까지 대기 (타임아웃 포함)
+        // 1. 먼저 crawling-server 깨우기 (타임아웃 설정)
+        print('🔥 Crawling server 깨우기 시도...');
+        bool crawlingServerWoken = await ApiService.wakeUpCrawlingServer().timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            print('🔥 Crawling server 깨우기 타임아웃');
+            return false;
+          },
+        );
+        
+        if (crawlingServerWoken) {
+          print('🔥 Crawling server 깨우기 성공!');
+        } else {
+          print('🔥 Crawling server 깨우기 실패, 그래도 진행...');
+        }
+        
+        // 2. 더 긴 대기 시간 (Cold Start 고려)
+        print('🔥 서버 준비 대기 중... (5초)');
+        await Future.delayed(const Duration(seconds: 5));
+        
+        // 3. 실제 API 호출 - 완료될 때까지 대기 (타임아웃 포함)
         String semester = _getSemesterForUrl(i);
+        print('🔥 Previous-courses API 호출 시작...');
         await ApiService.saveCourses(widget.urls[i], semester).timeout(
-          const Duration(seconds: 30),
+          const Duration(seconds: 60), // 타임아웃 시간 증가
           onTimeout: () {
             print('🔥 API 호출 타임아웃: ${widget.urls[i]}');
             return null;

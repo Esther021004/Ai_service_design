@@ -16,6 +16,12 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$_crawlingServerBaseUrl/'),
         headers: {'Content-Type': 'application/json'},
+      ).timeout(
+        const Duration(seconds: 15), // 타임아웃 설정
+        onTimeout: () {
+          print('🔥 Crawling server 깨우기 타임아웃');
+          throw Exception('Request timeout');
+        },
       );
       
       print('🔥 Crawling server 응답: ${response.statusCode}');

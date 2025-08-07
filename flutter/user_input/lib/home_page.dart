@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'profile_input_page.dart';
 import 'preference_input_page.dart';
 import 'previous_courses_page.dart';
@@ -396,22 +397,16 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+            appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_forever, color: Color(0xFFFF4444)),
-            onPressed: () {
-              _showDeleteAccountDialog(context);
+            icon: const Icon(Icons.logout, color: Color(0xFF862CF9)),
+            onPressed: () async {
+              _showLogoutDialog(context);
             },
           ),
-                     IconButton(
-             icon: const Icon(Icons.logout, color: Color(0xFF862CF9)),
-             onPressed: () async {
-               _showLogoutDialog(context);
-             },
-           ),
         ],
       ),
       body: _pages[_selectedIndex],
@@ -446,170 +441,482 @@ class _HomePageState extends State<HomePage> {
 class _MainHomeBody extends StatelessWidget {
   const _MainHomeBody({Key? key}) : super(key: key);
 
+  Future<void> _launchURL(BuildContext context) async {
+    const url = 'https://portal.sungshin.ac.kr/portal/ssu/menu/notice/ssuboard02?boardId=ssuboard02';
+    try {
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(
+          Uri.parse(url),
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('링크를 열 수 없습니다.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('링크를 열 수 없습니다.')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              // Profile Card
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ProfileInputPage(isOnboarding: false)),
-                  );
-                },
-                child: Container(
-                  width: double.infinity,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Color(0xFFE9DDFB),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
+    return Container(
+      color: Colors.white,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              children: [
+                // Profile Section
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfileInputPage(isOnboarding: false)),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                                         decoration: BoxDecoration(
+                       color: Colors.white,
+                       borderRadius: BorderRadius.circular(16),
+                       boxShadow: [
+                         BoxShadow(
+                           color: Colors.black.withOpacity(0.1),
+                           blurRadius: 15,
+                           offset: const Offset(0, 8),
+                         ),
+                       ],
+                     ),
+                    child: Row(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Image.asset(
-                          'assets/mascot_remove.png',
-                          width: 60,
-                          height: 60,
+                      // Profile Image
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(30),
+                          child: Image.asset(
+                            'assets/mascot.png',
+                            width: 60,
+                            height: 60,
+                          ),
                         ),
                       ),
-                      const Expanded(
-                        child: Center(
-                          child: Text(
-                            '프로필',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                              fontFamily: 'GangwonEdu',
-                            ),
-                          ),
+                      const SizedBox(width: 16),
+                                             // Profile Info
+                       Expanded(
+                         child: StreamBuilder<DocumentSnapshot>(
+                           stream: FirebaseFirestore.instance
+                               .collection('users')
+                               .doc(FirebaseAuth.instance.currentUser?.email)
+                               .snapshots(),
+                           builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                                                     Text(
+                                     '로딩 중...',
+                                     style: TextStyle(
+                                       fontSize: 24,
+                                       fontWeight: FontWeight.bold,
+                                       fontFamily: 'Pretendard',
+                                       color: Colors.black,
+                                     ),
+                                   ),
+                                   SizedBox(height: 4),
+                                   Text(
+                                     '정보를 불러오는 중입니다',
+                                     style: TextStyle(
+                                       fontSize: 16,
+                                       fontWeight: FontWeight.w500,
+                                       fontFamily: 'Pretendard',
+                                       color: Colors.black54,
+                                     ),
+                                   ),
+                                ],
+                              );
+                            }
+
+                            if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
+                              return const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                                                     Text(
+                                     '사용자',
+                                     style: TextStyle(
+                                       fontSize: 24,
+                                       fontWeight: FontWeight.bold,
+                                       fontFamily: 'Pretendard',
+                                       color: Colors.black,
+                                     ),
+                                   ),
+                                   SizedBox(height: 4),
+                                   Text(
+                                     '프로필 정보를 설정해주세요',
+                                     style: TextStyle(
+                                       fontSize: 16,
+                                       fontWeight: FontWeight.w500,
+                                       fontFamily: 'Pretendard',
+                                       color: Colors.black54,
+                                     ),
+                                   ),
+                                ],
+                              );
+                            }
+
+                                                         final userData = snapshot.data!.data() as Map<String, dynamic>?;
+                             
+                             // 디버그: 실제 데이터 확인
+                             print('🔥 Firebase 데이터: $userData');
+                             
+                             // profile 객체에서 데이터 가져오기
+                             final profileData = userData?['profile'] as Map<String, dynamic>?;
+                             
+                             final name = profileData?['이름'] as String? ?? '사용자';
+                             final major = profileData?['전공'] as String? ?? '학과 미설정';
+                             
+                             // grade가 숫자인지 문자열인지 확인
+                             dynamic gradeValue = profileData?['학년'];
+                             String gradeText;
+                             if (gradeValue is int) {
+                               gradeText = '${gradeValue}학년';
+                             } else if (gradeValue is String) {
+                               gradeText = gradeValue;
+                             } else {
+                               gradeText = '학년 미설정';
+                             }
+                             
+                             print('🔥 파싱된 데이터 - 이름: $name, 전공: $major, 학년: $gradeText');
+
+                             return Column(
+                               crossAxisAlignment: CrossAxisAlignment.start,
+                               children: [
+                                                                   Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Pretendard',
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '학과 : $major / 학년 : $gradeText',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Pretendard',
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                               ],
+                             );
+                          },
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              // Progress Graph
-              CreditProgressWidget(),
-              const SizedBox(height: 20),
-              // Previous Courses & Preference
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const PreviousCoursesPage(isOnboarding: false)),
-                        );
-                      },
-                      child: Container(
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Color(0xFFF3EFFF),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            '이전학기\n수강내역',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              fontFamily: 'GangwonEdu',
-                            ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Credit Progress Section
+                CreditProgressWidget(),
+                const SizedBox(height: 24),
+                
+                // Content Cards Section
+                Row(
+                  children: [
+                    // Left Card - User Preferences
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const PreferenceInputPage(isOnboarding: false)),
+                          );
+                        },
+                        child: Container(
+                          height: 260,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(2, 4),
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Transform.scale(
+                                  scale: 1.2,
+                                  child: Image.asset(
+                                    'assets/사용자 선호도.png',
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 10,
+                                left: 15,
+                                child: Text(
+                                  '사용자 선호도',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: '강원교육튼튼',
+                                    color: Colors.white,
+                                    letterSpacing: 1.5,
+                                    shadows: [
+                                      Shadow(
+                                        offset: Offset(1, 1),
+                                        blurRadius: 2,
+                                        color: Colors.black.withOpacity(0.5),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const PreferenceInputPage(isOnboarding: false)),
-                        );
-                      },
-                      child: Container(
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Color(0xFFEAF1F4),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            '사용자\n선호도',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              fontFamily: 'GangwonEdu',
+                    const SizedBox(width: 16),
+                    // Right Cards Column
+                    Expanded(
+                      child: Column(
+                        children: [
+                          // Top Right Card - Previous Courses
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const PreviousCoursesPage(isOnboarding: false)),
+                              );
+                            },
+                            child: Container(
+                              height: 170,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 10,
+                                    offset: const Offset(2, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Transform.scale(
+                                      scale: 1.1,
+                                      child: Image.asset(
+                                        'assets/이전학기수강내역.png',
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 10,
+                                    right: 10,
+                                    child: Text(
+                                      '이전학기\n수강내역',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: '강원교육튼튼',
+                                        color: Colors.white,
+                                        letterSpacing: 1.5,
+                                        shadows: [
+                                          Shadow(
+                                            offset: Offset(1, 1),
+                                            blurRadius: 2,
+                                            color: Colors.black.withOpacity(0.5),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          // Bottom Right Card - Previous Recommendations
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const PreviousRecommendationsPage()),
+                              );
+                            },
+                            child: Container(
+                              height: 90,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 10,
+                                    offset: const Offset(2, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Transform.scale(
+                                      scale: 1.1,
+                                      child: Image.asset(
+                                        'assets/이전추천내역.png',
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 10,
+                                    right: 10,
+                                    child: Text(
+                                      '이전 추천 내역',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: '강원교육튼튼',
+                                        color: Colors.white,
+                                        letterSpacing: 1.5,
+                                        shadows: [
+                                          Shadow(
+                                            offset: Offset(1, 1),
+                                            blurRadius: 2,
+                                            color: Colors.black.withOpacity(0.5),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                
+                // Course Registration Banner
+                GestureDetector(
+                  onTap: () => _launchURL(context),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Color(0xFFE3D9F8),
+                          Color(0xFFFFFFFF),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(2, 4),
                         ),
-                      ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Previous Recommended Courses
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const PreviousRecommendationsPage()),
-                  );
-                },
-                child: Container(
-                  width: double.infinity,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: Color(0xFFE8F5E8),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '이전 추천 강의 내역',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        fontFamily: 'GangwonEdu',
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Notice
-              Container(
-                width: double.infinity,
-                height: 70,
-                decoration: BoxDecoration(
-                  color: Color(0xFFFCEEFF),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Center(
-                  child: Text(
-                    '공지사항',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      fontFamily: 'GangwonEdu',
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '2025 - 1학기 수강신청',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Pretendard',
+                                  color: Color(0xFF1A1A1A),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                '관심강좌 신청: 2025. 2. 3.(월) 10:00 ~ 2. 10.(월) 17:00',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Pretendard',
+                                  color: Color(0xFF767676),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                '수강신청: 2025. 2. 17.(월) 10:00 ~ 2. 19.(수) 17:00',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Pretendard',
+                                  color: Color(0xFF767676),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          color: Color(0xFF1A1A1A),
+                          size: 18,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -659,9 +966,9 @@ class _CreditProgressWidgetState extends State<CreditProgressWidget> {
 
   // 막대 높이 계산 함수
   double _getBarHeight(int credit) {
-    // 최대 높이를 100으로 설정하고, 전체 학점 대비 비율로 계산
+    // 최대 높이를 50으로 설정하고, 전체 학점 대비 비율로 계산
     int totalCredit = _creditData?['전체 학점'] as int? ?? 130;
-    double maxHeight = 100.0;
+    double maxHeight = 50.0;
     return (credit / totalCredit) * maxHeight;
   }
 
@@ -669,194 +976,215 @@ class _CreditProgressWidgetState extends State<CreditProgressWidget> {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 200,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Color(0xFFF8F9FF),
+        color: const Color(0xFFFCF7FF),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: Offset(0, 2),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(2, 4),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF862CF9)),
-                ),
-              )
-                         : _creditData == null
-                 ? const Center(
-                     child: Column(
-                       mainAxisAlignment: MainAxisAlignment.center,
-                       children: [
-                         Icon(
-                           Icons.info_outline,
-                           color: Color(0xFF666666),
-                           size: 48,
-                         ),
-                         SizedBox(height: 8),
-                         Text(
-                           '학점 데이터를 불러오는 중...',
-                           style: TextStyle(
-                             fontWeight: FontWeight.bold,
-                             fontSize: 16,
-                             fontFamily: 'GangwonEdu',
-                             color: Color(0xFF666666),
-                           ),
-                         ),
-                       ],
-                     ),
-                   )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      child: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF862CF9)),
+              ),
+            )
+          : _creditData == null
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        '학점 진행률',
+                      Icon(
+                        Icons.info_outline,
+                        color: Color(0xFF666666),
+                        size: 48,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        '학점 데이터를 불러오는 중...',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          fontFamily: 'GangwonEdu',
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // 전체 학점 표시
-                      Text(
-                        '전체 학점: ${_creditData!['전체 학점']}학점',
-                        style: const TextStyle(
-                          fontSize: 14,
+                          fontSize: 16,
                           fontFamily: 'GangwonEdu',
                           color: Color(0xFF666666),
                         ),
                       ),
-                      const SizedBox(height: 25),
-                      // 그래프와 수치 정보를 나란히 배치
-                      Row(
-                        children: [
-                          // 세로 막대 그래프
-                          Expanded(
-                            flex: 2,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      Container(
-                                        width: 30,
-                                        height: _getBarHeight(_creditData!['전공'] as int),
-                                        decoration: BoxDecoration(
-                                          color: Color(0xFF2196F3), // 파란색
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const Text(
-                                        '전공',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontFamily: 'GangwonEdu',
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      Container(
-                                        width: 30,
-                                        height: _getBarHeight(_creditData!['교양'] as int),
-                                        decoration: BoxDecoration(
-                                          color: Color(0xFFF44336), // 빨간색
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const Text(
-                                        '교양',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontFamily: 'GangwonEdu',
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      Container(
-                                        width: 30,
-                                        height: _getBarHeight(_creditData!['교직'] as int),
-                                        decoration: BoxDecoration(
-                                          color: Color(0xFF4CAF50), // 초록색
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const Text(
-                                        '교직',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontFamily: 'GangwonEdu',
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          // 상세 정보 (우측)
-                          Expanded(
-                            flex: 1,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '전공학점: ${_creditData!['전공']}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: 'GangwonEdu',
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '교양학점: ${_creditData!['교양']}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: 'GangwonEdu',
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '교직학점: ${_creditData!['교직']}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: 'GangwonEdu',
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
-      ),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          '학점 진행률',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: 'Pretendard',
+                            color: Colors.black,
+                          ),
+                        ),
+                        Text(
+                          '전체 학점 : ${_creditData!['전체 학점']}학점',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Pretendard',
+                            color: Color(0xFF767676),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // Bar Chart
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          height: _getBarHeight(_creditData!['전공'] as int),
+                                          width: 30,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF862CF9),
+                                            borderRadius: BorderRadius.only(
+                                              topLeft: Radius.circular(4),
+                                              topRight: Radius.circular(4),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        const Text(
+                                          '전공',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                            fontFamily: 'Pretendard',
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          height: _getBarHeight(_creditData!['교양'] as int),
+                                          width: 25,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFAD6BFC),
+                                            borderRadius: BorderRadius.only(
+                                              topLeft: Radius.circular(4),
+                                              topRight: Radius.circular(4),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        const Text(
+                                          '교양',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                            fontFamily: 'Pretendard',
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          height: _getBarHeight(_creditData!['교직'] as int),
+                                          width: 20,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF4F86F2),
+                                            borderRadius: BorderRadius.only(
+                                              topLeft: Radius.circular(4),
+                                              topRight: Radius.circular(4),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        const Text(
+                                          '교직',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                            fontFamily: 'Pretendard',
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Credit Details
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '전공 학점 : ${_creditData!['전공']}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Pretendard',
+                                  color: Colors.black,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '교양 학점 : ${_creditData!['교양']}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Pretendard',
+                                  color: Colors.black,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '교직 학점 : ${_creditData!['교직']}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Pretendard',
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
     );
   }
 } 

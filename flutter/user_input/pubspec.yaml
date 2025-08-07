@@ -17,10 +17,30 @@ dependencies:
   firebase_auth: ^4.17.4
   google_sign_in: ^6.2.1
   http: ^1.1.0
+  url_launcher: ^6.2.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "icon"
+  ios: true
+  image_path: "assets/mascot.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/mascot.png"
+    background_color: "#673AB7"
+    theme_color: "#673AB7"
+  windows:
+    generate: true
+    image_path: "assets/mascot.png"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/mascot.png"
 
 flutter:
   uses-material-design: true
@@ -30,6 +50,9 @@ flutter:
     - assets/학교전경 그래픽1.png
     - assets/loading_character.png
     - assets/loading_character_remove.png
+    - assets/사용자 선호도.png
+    - assets/이전학기수강내역.png
+    - assets/이전추천내역.png
     - assets/fonts/Pretendard-Medium.ttf
     - assets/fonts/강원교육튼튼.ttf
   fonts:

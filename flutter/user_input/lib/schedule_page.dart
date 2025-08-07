@@ -81,7 +81,13 @@ class _SchedulePageState extends State<SchedulePage> {
         title: Row(
           children: [
             Expanded(
-              child: Text(course['과목명'] ?? ''),
+              child: Text(
+                course['과목명'] ?? '',
+                style: const TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
@@ -97,14 +103,34 @@ class _SchedulePageState extends State<SchedulePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('교수명: ${course['교수명'] ?? ''}'),
-            Text('캠퍼스: ${course['캠퍼스'] ?? ''}'),
-            Text('시간표: ${course['시간표'] ?? ''}'),
+            Text(
+              '교수명: ${course['교수명'] ?? ''}',
+              style: const TextStyle(
+                fontFamily: 'Pretendard',
+              ),
+            ),
+            Text(
+              '캠퍼스: ${course['캠퍼스'] ?? ''}',
+              style: const TextStyle(
+                fontFamily: 'Pretendard',
+              ),
+            ),
+            Text(
+              '시간표: ${course['시간표'] ?? ''}',
+              style: const TextStyle(
+                fontFamily: 'Pretendard',
+              ),
+            ),
           ],
         ),
         actions: [
           TextButton(
-            child: const Text('닫기'),
+            child: const Text(
+              '닫기',
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+              ),
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -116,15 +142,37 @@ class _SchedulePageState extends State<SchedulePage> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('강의 삭제'),
-        content: Text('${course['과목명']} 강의를 시간표에서 삭제하시겠습니까?'),
+        title: const Text(
+          '강의 삭제',
+          style: TextStyle(
+            fontFamily: 'Pretendard',
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          '${course['과목명']} 강의를 시간표에서 삭제하시겠습니까?',
+          style: const TextStyle(
+            fontFamily: 'Pretendard',
+          ),
+        ),
         actions: [
           TextButton(
-            child: const Text('취소'),
+            child: const Text(
+              '취소',
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+              ),
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
           TextButton(
-            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+            child: const Text(
+              '삭제', 
+              style: TextStyle(
+                color: Colors.red,
+                fontFamily: 'Pretendard',
+              ),
+            ),
             onPressed: () {
               Navigator.of(context).pop();
               _deleteCourseFromSchedule(course);
@@ -200,7 +248,7 @@ class _SchedulePageState extends State<SchedulePage> {
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        fontFamily: 'GangwonEdu',
+                        fontFamily: 'Pretendard',
                       ),
                     ),
                   ),
@@ -233,7 +281,7 @@ class _SchedulePageState extends State<SchedulePage> {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
-                      fontFamily: 'GangwonEdu',
+                      fontFamily: 'Pretendard',
                     ),
                   ),
                 ),
@@ -350,7 +398,7 @@ class _SchedulePageState extends State<SchedulePage> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
-                          fontFamily: 'GangwonEdu',
+                          fontFamily: 'Pretendard',
                           color: Colors.black,
                         ),
                       ),
@@ -419,7 +467,7 @@ class _SchedulePageState extends State<SchedulePage> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
-                                fontFamily: 'GangwonEdu',
+                                fontFamily: 'Pretendard',
                               ),
                             ),
                             const Spacer(),
@@ -432,20 +480,20 @@ class _SchedulePageState extends State<SchedulePage> {
                                      style: TextStyle(
                                        color: Colors.grey,
                                        fontSize: 14,
-                                       fontFamily: 'GangwonEdu',
+                                       fontFamily: 'Pretendard',
                                      ),
                                    );
                                  }
                                  
                                  final count = snapshot.data?.length ?? 0;
-                                 return Text(
-                                   '${count}개',
-                                   style: const TextStyle(
-                                     color: Colors.grey,
-                                     fontSize: 14,
-                                     fontFamily: 'GangwonEdu',
-                                   ),
-                                 );
+                                                                    return Text(
+                                     '${count}개',
+                                     style: const TextStyle(
+                                       color: Colors.grey,
+                                       fontSize: 14,
+                                       fontFamily: 'Pretendard',
+                                     ),
+                                   );
                                },
                              ),
                           ],
