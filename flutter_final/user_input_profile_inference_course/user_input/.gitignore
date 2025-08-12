@@ -1,0 +1,52 @@
+.dart_tool/
+.packages
+.pub/
+build/
+.idea/
+.vscode/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-versions
+pubspec.lock
+**/Generated.xcconfig
+**/xcuserdata/
+**/Pods/
+**/DerivedData/
+**/build/
+**/.DS_Store
+**/Thumbs.db
+**/*.swp 
+# --- Flutter 기본 무시 항목 ---
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+.idea/
+.vscode/
+android/.gradle/
+android/app/key.properties
+.cxx/
+captures/
+local.properties
+gradlew
+gradlew.bat
+GeneratedPluginRegistrant.java
+
+# --- Android keystore 파일 무시 ---
+**/*.keystore
+**/*.jks
+
+# --- Firebase 비공개 키 무시 (절대 공개 금지) ---
+firebase-key.json
+**/firebase-key.json
+**/serviceAccountKey.json
+
+# --- 환경변수 파일 무시 (보안 정보 저장용) ---
+.env
+.env.*
+# Firebase 설정 키 무시 (보안을 위해)
+google-services.json
+ios/Runner/GoogleService-Info.plist
